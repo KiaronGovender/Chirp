@@ -1,126 +1,74 @@
-import { useForm } from '@inertiajs/react';
-import React from 'react';
+import React, { useState } from 'react';
+import { useForm, usePage } from '@inertiajs/react';
+import { Auth } from '@/types/auth';
 
-const CreatePost = () => {
-    const { data, setData, post, processing, errors, reset } = useForm({
+export default function CreatePost() {
+    const { auth } = usePage<{ auth: Auth }>().props;
+    const { data, setData, post, processing, reset } = useForm({
         body: '',
     });
 
-    function handleSubmit(e: React.MouseEvent<HTMLButtonElement>) {
-        e.preventDefault();
+    const [isFocused, setIsFocused] = useState(false);
 
+    if (!auth?.user) return null; // Only show if logged in
+
+    function submit(e: React.FormEvent) {
+        e.preventDefault();
         post('/tweets', {
             onSuccess: () => reset('body'),
         });
     }
 
     return (
-        <div className="mx-auto max-w-xl border-b border-gray-200 bg-white p-4 font-sans">
-            <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                    <img
-                        src="https://i.pravatar.cc/150?img=47"
-                        alt="Sam Taylor"
-                        className="h-12 w-12 rounded-full bg-gray-200 object-cover"
-                    />
-                </div>
+        <form onSubmit={submit} className="flex px-4 py-3 border-gray-100 pb-2">
+            <div className="mr-3 flex-shrink-0 pt-1">
+                <img
+                    src={auth.user.avatar || `https://ui-avatars.com/api/?name=${auth.user.name}&background=random`}
+                    alt={auth.user.name}
+                    className="h-10 w-10 rounded-full"
+                />
+            </div>
 
-                <div className="min-w-0 flex-1 pt-2">
-                    <div className="mb-4">
-                        <input
-                            type="text"
-                            value={data.body}
-                            onChange={(e) => setData('body', e.target.value)}
-                            placeholder="What's chirping?"
-                            className="w-full border-none bg-transparent text-xl text-gray-600 placeholder-gray-400 focus:ring-0 focus:outline-none"
-                        />
+            <div className="flex-1">
+                <textarea
+                    value={data.body}
+                    onChange={(e) => setData('body', e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    placeholder="What is happening?!"
+                    className="w-full resize-none border-none bg-transparent pt-3 text-xl placeholder-gray-500 focus:ring-0"
+                    rows={isFocused || data.body.length > 0 ? 3 : 1}
+                ></textarea>
+
+                {(isFocused || data.body.length > 0) && (
+                    <div className="mt-2 text-[#1d9bf0] font-bold text-sm px-2 pb-3 border-b border-gray-100">
+                        <span className="cursor-pointer hover:bg-[#1d9bf0]/10 px-3 py-1 rounded-full transition">
+                            Everyone can reply
+                        </span>
+                    </div>
+                )}
+
+                <div className="mt-3 flex items-center justify-between pb-1">
+                    <div className="flex items-center text-[#1d9bf0]">
+                        <button type="button" className="rounded-full p-2 transition hover:bg-[#1d9bf0]/10">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current"><path d="M3 5.5C3 4.119 4.119 3 5.5 3h13C19.881 3 21 4.119 21 5.5v13c0 1.381-1.119 2.5-2.5 2.5h-13C4.119 21 3 19.881 3 18.5v-13zM5.5 5c-.276 0-.5.224-.5.5v9.086l3-3 3 3 5-5 3 3V5.5c0-.276-.224-.5-.5-.5h-13zM19 15.414l-3-3-5 5-3-3-3 3V18.5c0 .276.224.5.5.5h13c.276 0 .5-.224.5-.5v-3.086zM9.75 7C8.784 7 8 7.784 8 8.75s.784 1.75 1.75 1.75 1.75-.784 1.75-1.75S10.716 7 9.75 7z"></path></svg>
+                        </button>
+                        <button type="button" className="rounded-full p-2 transition hover:bg-[#1d9bf0]/10">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current"><path d="M19 10.5V8.8h-4.4v-1.6h4.4V5.5h1.6v1.7h4.4v1.6h-4.4v1.7H19zm-7.3-1.55l1.7 2.5c.2.3.2.7 0 1l-1.7 2.5c-.3.4-.9.5-1.4.1-.1-.1-.2-.2-.2-.3l-.4-1.7c-.1-.3-.3-.5-.6-.5h-2c-.3 0-.6.2-.6.5l-.4 1.7c-.1.3-.4.6-.7.6-.2 0-.4-.1-.5-.2-.1-.2-.2-.3-.2-.5l1.6-7.8c.2-.5.8-.8 1.4-.7.1 0 .3.1.4.2l3.4 2.1c.3.2.6.2.8 0zm-1.8 1.6l-1.9-1.2-1.2 5.6h1.2l.6-2.5c.1-.4.5-.7 1-.6h1.5l.8-3.4c0-.3-.4-.5-.7-.3l-1.3 2.4z"></path></svg>
+                        </button>
+                        {/* More icons... */}
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-transparent pt-2">
-                        <div className="-ml-2 flex items-center gap-1 text-[#38bdf8]">
-                            <button className="rounded-full p-2 transition-colors hover:bg-blue-50">
-                                <svg
-                                    className="h-[20px] w-[20px]"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                    ></path>
-                                </svg>
-                            </button>
-
-                            <button className="rounded-full p-2 transition-colors hover:bg-blue-50">
-                                <svg
-                                    className="h-[20px] w-[20px]"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    ></path>
-                                </svg>
-                            </button>
-
-                            <button className="rounded-full p-2 transition-colors hover:bg-blue-50">
-                                <svg
-                                    className="h-[20px] w-[20px]"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                    ></path>
-                                </svg>
-                            </button>
-
-                            <button className="rounded-full p-2 transition-colors hover:bg-blue-50">
-                                <svg
-                                    className="h-[20px] w-[20px]"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                    ></path>
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                    ></path>
-                                </svg>
-                            </button>
-                        </div>
-                        {errors.body && <div>{errors.body}</div>}
+                    <div>
                         <button
-                            type="button"
-                            onClick={handleSubmit}
-                            disabled={processing}
-                            className="cursor-pointer rounded-full bg-[#9cd4fa] px-5 py-2 text-[15px] font-bold text-white transition-colors hover:bg-blue-300"
+                            type="submit"
+                            disabled={data.body.length === 0 || processing}
+                            className="rounded-full bg-[#1d9bf0] px-5 py-2 font-bold text-white transition hover:bg-[#1a8cd8] disabled:opacity-50"
                         >
                             Post
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
     );
-};
-
-export default CreatePost;
+}

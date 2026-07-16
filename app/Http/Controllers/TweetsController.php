@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\tweets;
+use App\Models\Tweet;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,21 +15,14 @@ class TweetsController extends Controller
      */
     public function index()
     {
-        $tweets = tweets::with('user')->latest()->get();
+        $user = auth()->user();
 
+        $tweets = $this->getTweets($user);
 
-        return Inertia::render('feed',[
-            'tweets' => $tweets
+        return Inertia::render('feed', [
+            'tweets' => $tweets,
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+}
 
     /**
      * Store a newly created resource in storage.
@@ -35,12 +30,13 @@ class TweetsController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'body' => ['required','max:1000','string']
+            'body' => ['required', 'max:1000', 'string'],
+            'parent_id' => ['nullable', 'integer', 'exists:tweets,id'],
         ]);
 
-        $validated['user_id'] = 1;
+        $validated['user_id'] = auth()->id();
 
-        tweets::create($validated);
+        Tweet::create($validated);
 
         return redirect('/');
     }
@@ -48,32 +44,79 @@ class TweetsController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(tweets $tweets)
+    public function show(Tweet $tweet)
     {
-        //
-    }
+        $user = auth()->user();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(tweets $tweets)
-    {
-        //
-    }
+        $tweet->load(['user', 'replies.user']);
+        $tweet->loadCount(['likes', 'retweets', 'replies']);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, tweets $tweets)
-    {
-        //
+        $tweet->is_liked = $tweet->isLikedBy($user);
+        $tweet->is_retweeted = $tweet->isRetweetedBy($user);
+        $tweet->is_bookmarked = $tweet->isBookmarkedBy($user);
+
+        /** @var Collection<int, Tweet> $replies */
+        $replies = $tweet->replies->map(function (Tweet $reply) use ($user) {
+            $reply->loadCount(['likes', 'retweets', 'replies']);
+            $reply->is_liked = $reply->isLikedBy($user);
+            $reply->is_retweeted = $reply->isRetweetedBy($user);
+            $reply->is_bookmarked = $reply->isBookmarkedBy($user);
+
+            return $reply;
+        });
+
+        return Inertia::render('tweet/show', [
+            'tweet' => $tweet,
+            'replies' => $replies,
+        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(tweets $tweets)
+    public function destroy(Tweet $tweet, Request $request)
     {
-        //
+        if ($request->user()->id !== $tweet->user_id) {
+            abort(403);
+        }
+
+        $tweet->delete();
+
+        return redirect('/');
+    }
+
+    public function getTweets(User $user){
+            return Tweet::with([
+            'user',
+            'parent.user'
+        ])
+        ->withCount([
+            'likes',
+            'retweets',
+            'replies'
+        ])
+        ->latest()
+        ->cursorPaginate(15)
+        ->through(function (Tweet $tweet) use ($user) {
+
+            $tweet->is_liked =
+                $tweet->isLikedBy($user);
+
+            $tweet->is_retweeted =
+                $tweet->isRetweetedBy($user);
+
+            $tweet->is_bookmarked =
+                $tweet->isBookmarkedBy($user);
+
+            return $tweet;
+        });
+    }
+
+    public function loadMore(){
+        $user = auth()->user();
+
+        return response()->json(
+            $this->getTweets($user)
+        );
     }
 }
