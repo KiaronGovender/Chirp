@@ -18,12 +18,14 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        $users = User::factory(20)->create();
-
-        $users->each(function ( $user) {
-            tweets::factory(rand(0,15))->create([
-                'user_id' => $user->id,
-            ]);
-        });
+            $this->call([
+            UserSeeder::class,
+            TweetsSeeder::class,
+            FollowSeeder::class,
+            LikeSeeder::class,
+            RetweetSeeder::class,
+            BookmarkSeeder::class,
+            MessageSeeder::class,
+        ]);
     }
 }

@@ -20,7 +20,7 @@ class TweetsFactory extends Factory
     {
         return [
             'body' => fake()->paragraph(),
-            'user_id' => User::factory()
+            'user_id' => User::factory(),
         ];
     }
 }
