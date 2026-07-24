@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TimelineService;
 use Database\Factories\TweetFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +16,13 @@ class Tweet extends Model
     use HasFactory;
 
     protected $fillable = ['body', 'user_id', 'parent_id'];
+
+    protected static function booted(): void
+    {
+        static::deleted(function (Tweet $tweet): void {
+            app(TimelineService::class)->removeTweetFromTimeline($tweet);
+        });
+    }
 
     public function user(): BelongsTo
     {

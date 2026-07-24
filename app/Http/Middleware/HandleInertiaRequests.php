@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\ChirpService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,6 +42,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'trends' => fn (): array => app(ChirpService::class)->trends(),
         ];
     }
 }
